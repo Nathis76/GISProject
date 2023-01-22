@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Bing Maps Mouse Events</title>
+        <meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+        <!-- CSS only -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+        <style type='text/css'>
+            body{margin:0;padding:0;overflow:hidden;font-family:'Segoe UI',Helvetica,Arial,Sans-Serif}
+            .inpt{padding-top: 2px;}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="row">
+                <div class="col-10">
+                    <div id='myMap' style='height: 100vh;'></div>
+                </div>
+                <div class="col-2">
+                    <div id='printoutPanel'></div>
+                    <div>
+                        <hr>
+                        <h5>Click Coords</h5>
+                        Lon: <div class="inpt"><input type="text" name="longitude" id="longitude" /></div>
+                        Lat: <div class="inpt"><input type="text" name="latitude" id="latitude" /></div>
+                        <div><input name="UserId" id="UserId" type="text" value="@User.Identity?.Id"/></div>
+                    </div>
+                    <div>
+                        <hr>
+                        <h5>Upper Left Corner</h5>
+                        Lon: <div class="inpt"><input type="text" name="ullon" id="ullon" /></div>
+                        Lat: <div class="inpt"><input type="text" name="ullat" id="ullat" /></div>
+                        <h5>Lower Right Corner</h5>
+                        Lon: <div class="inpt"><input type="text" name="lrlon" id="lrlon" /></div>
+                        Lat: <div class="inpt"><input type="text" name="lrlat" id="lrlat" /></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+        
+        <script type='text/javascript'>
+            function loadMapScenario() {
+                var map = new Microsoft.Maps.Map(document.getElementById('myMap'), {});
+                // Binding the events
+                Microsoft.Maps.Events.addHandler(map, 'click', function (e) { 
+                    handleArgs('mapClick', e); 
+                    getCoordinates(e);
+                });
+                Microsoft.Maps.Events.addHandler(map, 'rightclick', function (e) { handleArgs('mapRightclick', e); });
+                Microsoft.Maps.Events.addHandler(map, 'dblclick', function (e) { handleArgs('mapDoubleclick', e); });
+                Microsoft.Maps.Events.addHandler(map, 'mousewheel', function (e) { 
+                    handleArgs('mapMousewheel', e); 
+                    getUpperLeftCornerCoords(e);
+                });
+                Microsoft.Maps.Events.addHandler(map, 'mousemove', function (e) { handleArgs('mapMousemove', e); });
+                Microsoft.Maps.Events.addHandler(map, 'mousedown', function (e) { handleArgs('mapMousedown', e); });
+                Microsoft.Maps.Events.addHandler(map, 'mouseout', function (e) { handleArgs('mapMouseout', e); });
+                Microsoft.Maps.Events.addHandler(map, 'mouseover', function (e) { handleArgs('mapMouseover', e); });
+                Microsoft.Maps.Events.addHandler(map, 'mouseup', function (e) { 
+                    handleArgs('mapMouseup', e); 
+                    getUpperLeftCornerCoords(e);
+                });
+                
+                // Setting up the printout panel
+                document.getElementById('printoutPanel').innerHTML =
+                    '<div id="mapClick">click</div>\
+                     <div id="mapRightclick">rightclick</div>\
+                     <div id="mapDoubleclick">dblclick</div>\
+                     <div id="mapMousewheel">mousewheel</div>\
+                     <div id="mapMousemove">mousemove</div>\
+                     <div id="mapMousedown">mousedown</div>\
+                     <div id="mapMouseout">mouseout</div>\
+                     <div id="mapMouseover">mouseover</div>\
+                     <div id="mapMouseup">mouseup</div>\
+                     <div>isPrimary: <span id="isPrimaryVal"></span></div>\
+                     <div>isSecondary: <span id="isSecondaryVal"></span></div>\
+                     <div>wheelDelta: <span id="wheelDeltaVal"></span></div>';
+                var highlights = {};
+                function getUpperLeftCornerCoords(e) {
+                    var point = new Microsoft.Maps.Point(0, 0);
+                    var ulloc = e.target.tryPixelToLocation(point);
+                    console.log("ULLat", ulloc.latitude, "ULLon", ulloc.longitude)
+                    document.getElementById("ullon").value = ulloc.longitude;
+                    document.getElementById("ullat").value = ulloc.latitude;
+
+                    var point = new Microsoft.Maps.Point(map.getWidth(), map.getHeight());
+                    var ulloc = e.target.tryPixelToLocation(point);
+                    console.log("ULLat", ulloc.latitude, "ULLon", ulloc.longitude)
+                    document.getElementById("lrlon").value = ulloc.longitude;
+                    document.getElementById("lrlat").value = ulloc.latitude;
+                }
+                function getCoordinates(e) {
+                    var point = new Microsoft.Maps.Point(e.getX(), e.getY());
+                    var loc = e.target.tryPixelToLocation(point);
+                    var pin = new Microsoft.Maps.Pushpin(loc, {'draggable': false});
+                    map.entities.push(pin);
+                    console.log(loc.latitude, loc.longitude)
+                    document.getElementById("longitude").value = loc.longitude;
+                    document.getElementById("latitude").value = loc.latitude;
+                }
+                function highlight(id) {
+                    document.getElementById(id).style.background = 'LightGreen';
+                    if (highlights[id]) {
+                        clearTimeout(highlights[id]);
+                    }
+                    highlights[id] = setTimeout(function () { document.getElementById(id).style.background = 'white'; }, 1000);
+                }
+                function showValue(id, value, defaultValue) {
+                    var strVal = (value || defaultValue).toString();
+                    document.getElementById(id).innerHTML = strVal;
+                }
+                function handleArgs(id, e) {
+                    highlight(id);
+                    showValue('isPrimaryVal', e.isPrimary, false);
+                    showValue('isSecondaryVal', e.isSecondary, false);
+                    showValue('wheelDeltaVal', e.wheelDelta, 0);
+                }
+                
+            }
+        </script>
+        <!-- JavaScript Bundle with Popper -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+        <script type='text/javascript' src='https://www.bing.com/api/maps/mapcontrol?key=PUT_YOUR_BING_KEY_HERE&callback=loadMapScenario' async defer></script>
+    </body>
+</html>
